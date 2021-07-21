@@ -1,0 +1,24 @@
+name: Docker Compose Actions Workflow
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      - run: sudo chmod +x /usr/local/bin/docker-compose
+      - run: docker-compose pull
+      - name: Change Permissions
+        run: chmod +x entrypoints/docker-entrypoint.sh entrypoints/sidekiq-entrypoint.sh
+      - name: Build the stack
+        run: docker-compose up -d app
+      - name: Stuff
+        run: docker-compose exec -T app rake db:environment:set RAILS_ENV=test
+      - name: Setup MySQL DB
+        run: docker-compose exec -T app bundle exec rake db:drop db:create RAILS_ENV=test
+      - name: MySQL Migrate
+        run: docker-compose exec -T app bundle exec rake db:schema:load RAILS_ENV=test
+      - name: DB Seed
+        run: docker-compose exec -T app bundle exec rake db:seed RAILS_ENV=test
+      - name: Test
+        run: docker-compose exec -T app bundle exec rspec spec

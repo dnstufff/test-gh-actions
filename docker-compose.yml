@@ -1,0 +1,56 @@
+version: '3.4'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+      - database
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_ENV: test
+      GSTORAGE_ACCESS_KEY_ID: test
+      GSTORAGE_SECRET_ACCESS_KEY: test
+
+  # sidekiq:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     - app
+  #     - database
+  #   volumes:
+  #     - .:/app
+  #   environment:
+  #     RAILS_ENV: development
+  #   entrypoint: ./entrypoints/sidekiq-entrypoint.sh
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - 8081:80
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - PMA_HOST=mysql
+      - PMA_ARBITRARY=1
+  database:
+    platform: linux/x86_64
+    image: mysql:5.7
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password --sql_mode=""
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql:/var/lib/mysql
+  redis:
+    image: redis:5.0.7
+
+
+volumes:
+  mysql:
